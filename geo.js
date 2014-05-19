@@ -21,10 +21,12 @@
         // DEFAULTS
         pointWidth: 2,
         pointColor: "#FFF",
+        pointColorMouseover: "#F00",
         lineWidth: 1,
         lineColor: "#000",
         circleWidth: 1.5,
         circleColor: "#000",
+        circleColorMouseover: "#F00",
 
 
         //---------------------------------------------------------------------------
@@ -34,11 +36,13 @@
 
 
         point: function (x, y) {
+            geo.redraw = true;
             this.manifest.push(new geo.Point(x, y));
             return this.manifest[this.manifest.length - 1];
         },
 
         addPoint: function (point) {
+            geo.redraw = true;
             this.manifest.push(point);
             return this.manifest[this.manifest.length - 1];
         },
@@ -62,6 +66,7 @@
             for (var i = 0; i < points.length; i++) {
                 //console.log('index', index1, index2)
                 lines.push(geo.lineFromPoints(points[index1], points[index2]));
+                geo.redraw = true;
                 this.manifest.push(lines[lines.length - 1]);
                 index1 = (index1 + 1) % points.length;
                 index2 = (index2 + 1) % points.length;
@@ -70,16 +75,19 @@
         },
 
         lineFromPoints: function (p1, p2) {
+            geo.redraw = true;
             this.manifest.push(new geo.Line(p1.x, p1.y, p2.x, p2.y));
             return this.manifest[this.manifest.length - 1];
         },
 
         lineFromCoords: function (x1, y1, x2, y2) {
+            geo.redraw = true;
             this.manifest.push(new geo.Line(x1, y1, x2, y2));
             return this.manifest[this.manifest.length - 1];
         },
 
         circleFromPoint: function (center, radius) {
+            geo.redraw = true;
             this.manifest.push(new geo.Circle(center.x, center.y, radius));
             return this.manifest[this.manifest.length - 1];
         },
@@ -106,6 +114,7 @@
                 / ((line1.x1 - line1.x2) * (line2.y1 - line2.y2) - (line1.y1 - line1.y2) * (line2.x1 - line2.x2));
 
             //console.log('new point', x, y)
+            geo.redraw = true;
             this.manifest.push(new geo.Point(x, y));
             return this.manifest[this.manifest.length - 1];
 
@@ -114,15 +123,15 @@
 
         getAllIntersections: function (line, type) {
             //optional type argument - get all intersections with things of a specific type
-            if(!type){
+            if (!type) {
                 type = "line";
             }
 
             var points = [];
             var i;
-            for(i=0; i<this.manifest.length; i++){
-                if(this.manifest[i].type === "line"){
-                    points.push(this.getLineIntersection(line,this.manifest[i]));
+            for (i = 0; i < this.manifest.length; i++) {
+                if (this.manifest[i].type === "line") {
+                    points.push(this.getLineIntersection(line, this.manifest[i]));
                 }
             }
 
@@ -159,17 +168,17 @@
 
             this.stage.removeAllChildren();
             for (i = 0; i < this.manifest.length; i++) {
-                if(this.manifest[i].type === "line" || this.manifest[i].type === "circle"){
+                if (this.manifest[i].type === "line" || this.manifest[i].type === "circle") {
                     this.manifest[i].draw();
                 }
             }
             //draw points last so they'll be on top
             for (i = 0; i < this.manifest.length; i++) {
-                if(this.manifest[i].type === "point"){
+                if (this.manifest[i].type === "point") {
                     this.manifest[i].draw();
                 }
             }
-
+            this.redraw = false;
         }
         //===========================================================================
 
@@ -189,7 +198,7 @@
 
         this.init(x, y);
         this.type = "point";
-
+        this.color = geo.pointColor;
     }
 
     Point.prototype = {
@@ -200,16 +209,30 @@
             this.y = y;
         },
 
+        handleMouseOver: function () {
+            this.color = geo.pointColorMouseover;
+            geo.redraw = true;
+        },
+
+        handleMouseOut: function () {
+            this.color = geo.pointColor;
+            geo.redraw = true;
+        },
         draw: function () {
             //console.log('drawing')
             this.shape = new createjs.Shape();
             this.shape.graphics.clear()
                 .setStrokeStyle(geo.pointWidth)
-                .beginStroke(geo.pointColor)
-                .beginFill(geo.pointColor)
+                .beginStroke(this.color)
+                .beginFill(this.color)
                 .drawCircle(this.x, this.y, geo.pointWidth);
             geo.stage.addChild(this.shape);
+
             this.id = this.shape.id;
+            this.shape.on("mouseover", this.handleMouseOver.bind(this));
+            this.shape.on("mouseout", this.handleMouseOut.bind(this));
+
+
         }
 
     };
@@ -343,6 +366,7 @@
             this.x = x;
             this.y = y;
             this.radius = radius;
+            this.color = geo.circleColor;
         },
 
         /**
@@ -379,15 +403,29 @@
 
         },
 
+        handleMouseOver: function () {
+            this.color = geo.circleColorMouseover;
+            geo.redraw = true;
+        },
+
+        handleMouseOut: function () {
+            this.color = geo.circleColor;
+            geo.redraw = true;
+        },
+
         draw: function () {
+
             //console.log('drawing circle', this.x, this.y, this.radius);
             this.shape = new createjs.Shape();
             this.shape.graphics.clear()
                 .setStrokeStyle(geo.circleWidth)
-                .beginStroke(geo.circleColor)
+                .beginStroke(this.color)
                 .drawCircle(this.x, this.y, this.radius);
             geo.stage.addChild(this.shape);
             this.id = this.shape.id;
+            this.shape.on("mouseover", this.handleMouseOver.bind(this));
+            this.shape.on("mouseout", this.handleMouseOut.bind(this));
+
         }
 
     };
